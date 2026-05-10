@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.PayApp2" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="colorPrimary">@color/unionpay_red</item>
+        <item name="colorPrimaryVariant">@color/unionpay_red_dark</item>
+        <item name="colorSecondary">@color/unionpay_blue</item>
+    </style>
+</resources>

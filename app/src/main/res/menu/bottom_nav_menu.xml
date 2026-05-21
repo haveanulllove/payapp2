@@ -1,7 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_home" android:icon="@drawable/ic_nav_home" android:title="首页" />
-    <item android:id="@+id/nav_promo" android:icon="@drawable/ic_nav_promo" android:title="优惠" />
-    <item android:id="@+id/nav_card" android:icon="@drawable/ic_nav_card" android:title="卡管理" />
-    <item android:id="@+id/nav_fortune" android:icon="@drawable/ic_nav_fortune" android:title="财富" />
-    <item android:id="@+id/nav_mine" android:icon="@drawable/ic_nav_mine" android:title="我的" />
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@android:drawable/ic_menu_compass"
+        android:title="@string/tab_home" />
+    <item
+        android:id="@+id/nav_promo"
+        android:icon="@android:drawable/ic_menu_slideshow"
+        android:title="@string/tab_promo" />
+    <item
+        android:id="@+id/nav_card"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="@string/tab_card" />
+    <item
+        android:id="@+id/nav_fortune"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="@string/tab_fortune" />
+    <item
+        android:id="@+id/nav_mine"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="@string/tab_mine" />
 </menu>

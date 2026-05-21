@@ -1,10 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="unionpay_red">#F53145</color>
-    <color name="unionpay_red_dark">#F1131E</color>
-    <color name="unionpay_blue">#28AEEA</color>
-    <color name="unionpay_green">#37D6B4</color>
-    <color name="unionpay_orange">#FF9F4A</color>
-    <color name="text_primary">#202124</color>
-    <color name="text_secondary">#8E8E93</color>
-    <color name="nav_inactive">#B8B8B8</color>
+    <color name="primary">#F2165B</color>
+    <color name="primary_light">#FF6B66</color>
+    <color name="background">#F5F5F5</color>
+    <color name="text_primary">#222222</color>
+    <color name="text_secondary">#888888</color>
+    <color name="white">#FFFFFF</color>
+    <color name="divider">#EEEEEE</color>
+    <color name="fortune_header">#1A5276</color>
+    <color name="fortune_header_end">#2980B9</color>
 </resources>

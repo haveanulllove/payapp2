@@ -1,13 +1,102 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5">
+    android:orientation="vertical"
+    android:background="@color/background">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="fortune"
-        android:textColor="#202124"
-        android:textSize="20sp" />
-</FrameLayout>
+        android:orientation="vertical"
+        android:background="@drawable/bg_gradient_fortune"
+        android:padding="16dp"
+        android:paddingTop="44dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="财富"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="@color/white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="总资产(元)"
+            android:textSize="12sp"
+            android:textColor="#B0FFFFFF"
+            android:layout_marginTop="14dp" />
+
+        <TextView
+            android:id="@+id/tvTotalAssets"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="52,360.80"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:layout_marginTop="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="昨日收益"
+                    android:textSize="11sp"
+                    android:textColor="#90FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+3.26"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:layout_marginTop="3dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="累计收益"
+                    android:textSize="11sp"
+                    android:textColor="#90FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+1,286.50"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:layout_marginTop="3dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvProducts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp" />
+</LinearLayout>

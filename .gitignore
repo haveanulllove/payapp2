@@ -4,6 +4,8 @@ dist/
 .idea/
 app/build/
 local.properties
+project_doc_index.sqlite
+docs/superpowers/
 
 .env
 .env.*

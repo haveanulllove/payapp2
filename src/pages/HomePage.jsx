@@ -7,22 +7,26 @@ const topActions = [
   { icon: "/current-app-icons/top/transfer.png", label: "转账" },
 ];
 
+const serviceIconBase = "/assets/service-icons-normalized";
+const serviceIconVersion = "20260522-3";
+const iconPath = (name) => `${serviceIconBase}/${name}.png?v=${serviceIconVersion}`;
+
 const serviceItems = [
-  { id: "transfer", icon: "/assets/service-icons-cropped/transfer.png", label: "转账" },
-  { id: "gov-consume", icon: "/assets/service-icons-cropped/gov-consume.png", label: "政府促消费" },
-  { id: "colorful-season", icon: "/assets/service-icons-cropped/colorful-season.png", label: "五彩消费季" },
-  { id: "credit-repay", icon: "/assets/service-icons-cropped/credit-repay.png", label: "信用卡还款" },
-  { id: "earn", icon: "/assets/service-icons-cropped/earn.png", label: "赚钱中心" },
-  { id: "bank-card", icon: "/assets/service-icons-cropped/bank-card.png", label: "查银行卡" },
-  { id: "mobile-recharge", icon: "/assets/service-icons-cropped/mobile-recharge.png", label: "手机充值" },
-  { id: "loan", icon: "/assets/service-icons-cropped/loan.png", label: "借款" },
-  { id: "apply-card", icon: "/assets/service-icons-cropped/apply-card.png", label: "申请信用卡" },
-  { id: "life-payment", icon: "/assets/service-icons-cropped/life-payment.png", label: "生活缴费" },
-  { id: "public-service", icon: "/assets/service-icons-cropped/public-service.png", label: "政务民生" },
-  { id: "payment-guard", icon: "/assets/service-icons-cropped/payment-guard.png", label: "支付守护" },
-  { id: "benefits", icon: "/assets/service-icons-cropped/benefits.png", label: "权益精选" },
-  { id: "mini-programs", icon: "/assets/service-icons-cropped/mini-programs.png", label: "我的小程序" },
-  { id: "more", icon: "/assets/service-icons-cropped/more.png", label: "更多" },
+  { id: "transfer", icon: iconPath("transfer"), label: "转账" },
+  { id: "gov-consume", icon: iconPath("gov-consume"), label: "政府促消费" },
+  { id: "colorful-season", icon: iconPath("colorful-season"), label: "五彩消费季" },
+  { id: "credit-repay", icon: iconPath("credit-repay"), label: "信用卡还款" },
+  { id: "earn", icon: iconPath("earn"), label: "赚钱中心" },
+  { id: "bank-card", icon: iconPath("bank-card"), label: "查银行卡" },
+  { id: "mobile-recharge", icon: iconPath("mobile-recharge"), label: "手机充值" },
+  { id: "loan", icon: iconPath("loan"), label: "借款" },
+  { id: "apply-card", icon: iconPath("apply-card"), label: "申请信用卡" },
+  { id: "life-payment", icon: iconPath("life-payment"), label: "生活缴费" },
+  { id: "public-service", icon: iconPath("public-service"), label: "政务民生" },
+  { id: "payment-guard", icon: iconPath("payment-guard"), label: "支付守护" },
+  { id: "benefits", icon: iconPath("benefits"), label: "权益精选" },
+  { id: "mini-programs", icon: iconPath("mini-programs"), label: "我的小程序" },
+  { id: "more", icon: iconPath("more"), label: "更多" },
 ];
 
 export default function HomePage({ onNavigate }) {

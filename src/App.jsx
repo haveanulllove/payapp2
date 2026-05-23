@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronLeft, Ellipsis, Search, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, Ellipsis, X } from "lucide-react";
 import TabBar from "./components/TabBar";
 import HomePage from "./pages/HomePage";
 import PromoPage from "./pages/PromoPage";
@@ -78,32 +78,15 @@ function CreditReportPage({ onBack, onHistory, onView }) {
   return (
     <main className="app-shell">
       <section className="mobile-page credit-page">
-        <PageHeader title="信用报告" onBack={onBack} />
-
         <section className="credit-hero">
-          <div className="credit-hero-copy">
-            <h2>个人信用报告</h2>
-            <p>快捷查询&nbsp;&nbsp;安全可靠</p>
-          </div>
-          <div className="credit-hero-figure" aria-hidden="true">
-            <span className="phone-frame">
-              <span className="phone-badge">信</span>
-            </span>
-            <span className="person-head" />
-            <span className="person-body" />
-            <span className="person-arm-left" />
-            <span className="person-arm-right" />
-            <span className="person-phone" />
-          </div>
+          <img src="/assets/credit-report/hero-bg.png" alt="" className="credit-hero-image" />
+          <button type="button" className="credit-back-hotspot" onClick={onBack} aria-label="返回" />
         </section>
 
         <section className="identity-card">
           <div className="identity-card-head">
             <strong>身份信息</strong>
-            <span className="support-icon" aria-hidden="true">
-              <span className="support-head" />
-              <span className="support-mouth" />
-            </span>
+            <img src="/assets/credit-report/support-icon.png" alt="" className="support-icon-image" />
           </div>
 
           <div className="identity-user">
@@ -122,9 +105,8 @@ function CreditReportPage({ onBack, onHistory, onView }) {
 
         <p className="phone-tip">验证码将会发送到您的注册手机号187****0537</p>
 
-        <button type="button" className="primary-query-button" onClick={onView}>
-          <Search size={24} strokeWidth={3} />
-          <span>免费申请查询</span>
+        <button type="button" className="primary-query-button image-button" onClick={onView}>
+          <img src="/assets/credit-report/query-button.png" alt="免费申请查询" className="primary-query-image" />
         </button>
 
         <button type="button" className="history-entry" onClick={onHistory}>

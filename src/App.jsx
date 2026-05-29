@@ -1,33 +1,123 @@
-import React, { useState } from "react";
-import { ChevronDown, ChevronLeft, Ellipsis, X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import TabBar from "./components/TabBar";
-import HomePage from "./pages/HomePage";
-import PromoPage from "./pages/PromoPage";
+import CreditMiniProgramHeader from "./components/CreditMiniProgramHeader";
+import RemotePdfViewer from "./components/RemotePdfViewer";
 import CardPage from "./pages/CardPage";
+import CreditReportQueryPage from "./pages/CreditReportQueryPage";
 import FortunePage from "./pages/FortunePage";
+import HomePage from "./pages/HomePage";
 import MinePage from "./pages/MinePage";
 import MiniProgramsPage from "./pages/MiniProgramsPage";
+import PromoPage from "./pages/PromoPage";
+import SearchPage from "./pages/SearchPage";
+import { getCreditReportQueryRecord, parseRecordDate } from "./creditReportRecord";
 
-const expiredDates = ["2026.04.04", "2026.03.01", "2026.02.07"];
+const PDF_URL = "http://120.71.7.165:9724/xybg.pdf";
+
+function formatCurrentDate() {
+  return formatDate(new Date());
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}.${month}.${day}`;
+}
+
+function createLocalDate(year, monthIndex, day) {
+  return new Date(year, monthIndex, day, 12, 0, 0, 0);
+}
+
+function getMonthRuleDate(year, monthIndex) {
+  const lastDay = createLocalDate(year, monthIndex + 1, 0);
+  const weekDay = lastDay.getDay();
+
+  if (weekDay === 0 || weekDay === 6) {
+    return lastDay;
+  }
+
+  return createLocalDate(year, lastDay.getMonth(), lastDay.getDate() + (6 - weekDay));
+}
+
+function getPreviousRuleDates(count, referenceDate = new Date()) {
+  const result = [];
+  const today = createLocalDate(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  let year = today.getFullYear();
+  let monthIndex = today.getMonth();
+
+  while (result.length < count) {
+    const candidate = getMonthRuleDate(year, monthIndex);
+    if (candidate < today) {
+      result.push(formatDate(candidate));
+    }
+
+    monthIndex -= 1;
+    if (monthIndex < 0) {
+      monthIndex = 11;
+      year -= 1;
+    }
+  }
+
+  return result;
+}
+
+function isRecordExpired(queryDate, referenceDate = new Date()) {
+  const recordDate = parseRecordDate(queryDate);
+  if (!recordDate) {
+    return false;
+  }
+
+  const today = createLocalDate(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  return today.getTime() - recordDate.getTime() >= 7 * 24 * 60 * 60 * 1000;
+}
 
 function App() {
   const [tab, setTab] = useState("home");
   const [page, setPage] = useState("home");
   const [creditReportBackPage, setCreditReportBackPage] = useState("home");
+  const historyReadyRef = useRef(false);
+
+  useEffect(() => {
+    window.history.replaceState({ appPage: "home" }, "");
+    historyReadyRef.current = true;
+
+    const handlePopState = (event) => {
+      const nextPage = event.state?.appPage || "home";
+      setPage(nextPage);
+      if (nextPage === "home") {
+        setTab("home");
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const openPage = (target) => {
+    if (historyReadyRef.current) {
+      window.history.pushState({ appPage: target }, "");
+    }
+    setPage(target);
+  };
 
   const navigate = (target) => {
     if (target === "credit-report") {
       setCreditReportBackPage("home");
-      setPage("credit-report");
+      openPage("credit-report");
     }
     if (target === "mini-programs") {
-      setPage("mini-programs");
+      openPage("mini-programs");
+    }
+    if (target === "search") {
+      openPage("search");
     }
   };
 
   const openCreditReportFromMiniPrograms = () => {
     setCreditReportBackPage("mini-programs");
-    setPage("credit-report");
+    openPage("credit-report");
   };
 
   const goHome = () => {
@@ -35,29 +125,53 @@ function App() {
     setTab("home");
   };
 
-  const goBackFromCreditReport = () => {
+  const goBackFromNestedPage = () => {
+    if (window.history.state?.appPage && window.history.state.appPage !== "home") {
+      window.history.back();
+      return;
+    }
+    goHome();
+  };
+
+  const closeCreditReport = () => {
     if (creditReportBackPage === "mini-programs") {
       setPage("mini-programs");
       return;
     }
-
     goHome();
   };
 
   if (page === "credit-report") {
-    return <CreditReportPage onBack={goBackFromCreditReport} onHistory={() => setPage("history")} onView={() => setPage("viewer")} />;
+    return (
+      <CreditReportQueryPage
+        onBack={closeCreditReport}
+        onClose={closeCreditReport}
+        onHistory={() => setPage("history")}
+        onView={() => setPage("viewer")}
+      />
+    );
   }
 
   if (page === "history") {
-    return <CreditReportHistoryPage onBack={() => setPage("credit-report")} onView={() => setPage("viewer")} />;
+    return (
+      <CreditReportHistoryPage
+        onBack={() => setPage("credit-report")}
+        onClose={closeCreditReport}
+        onView={() => setPage("viewer")}
+      />
+    );
   }
 
   if (page === "viewer") {
-    return <CreditReportViewer onBack={() => setPage("history")} />;
+    return <CreditReportViewer onBack={() => setPage("history")} onClose={closeCreditReport} />;
   }
 
   if (page === "mini-programs") {
     return <MiniProgramsPage onBack={goHome} onOpenCreditReport={openCreditReportFromMiniPrograms} />;
+  }
+
+  if (page === "search") {
+    return <SearchPage onBack={goBackFromNestedPage} onOpenCreditReport={() => navigate("credit-report")} />;
   }
 
   return (
@@ -74,70 +188,16 @@ function App() {
   );
 }
 
-function CreditReportPage({ onBack, onHistory, onView }) {
-  return (
-    <main className="app-shell">
-      <section className="mobile-page credit-page">
-        <section className="credit-hero">
-          <img src="/assets/credit-report/hero-bg.png" alt="" className="credit-hero-image" />
-          <button type="button" className="credit-back-hotspot" onClick={onBack} aria-label="返回" />
-        </section>
+function CreditReportHistoryPage({ onBack, onClose, onView }) {
+  const queryRecord = getCreditReportQueryRecord();
+  const activeQueryDate = queryRecord?.queryDate && !isRecordExpired(queryRecord.queryDate) ? queryRecord.queryDate : null;
+  const expiredRecordDate = queryRecord?.queryDate && isRecordExpired(queryRecord.queryDate) ? queryRecord.queryDate : null;
+  const expiredDates = [...new Set([expiredRecordDate, ...getPreviousRuleDates(4)].filter(Boolean))];
 
-        <section className="identity-card">
-          <div className="identity-card-head">
-            <strong>身份信息</strong>
-            <img src="/assets/credit-report/support-icon.png" alt="" className="support-icon-image" />
-          </div>
-
-          <div className="identity-user">
-            <h3>张*巍</h3>
-            <p>2103**********0610</p>
-          </div>
-
-          <div className="verify-row">
-            <span className="verify-label">验证码</span>
-            <span className="verify-placeholder">请输入</span>
-            <button type="button" className="verify-send">
-              发送验证码
-            </button>
-          </div>
-        </section>
-
-        <p className="phone-tip">验证码将会发送到您的注册手机号187****0537</p>
-
-        <button type="button" className="primary-query-button image-button" onClick={onView}>
-          <img src="/assets/credit-report/query-button.png" alt="免费申请查询" className="primary-query-image" />
-        </button>
-
-        <button type="button" className="history-entry" onClick={onHistory}>
-          查询记录
-        </button>
-
-        <section className="notice-section">
-          <div className="notice-header">
-            <h3>查询须知</h3>
-            <button type="button" className="agreement-link">
-              查看协议
-            </button>
-          </div>
-          <ol className="notice-list">
-            <li>除了信息提供机构，任何其他机构无权处理您个人信用报告上的不良记录，请警惕以处理不良信用记录为诱饵的诈骗活动。</li>
-            <li>个人信用报告涉及您的个人隐私，为确保隐私安全，该报告仅限本人查询，查询成功后请妥善保管您的报告。</li>
-            <li>过于频繁查询信用报告可能会影响您的信用卡及贷款申请额度和进度，具体以放款机构规则为准。</li>
-            <li>查询成功后您的信用报告仅保留7天，7天后自动删除，请您收到报告生成短信后及时查看报告。</li>
-            <li>本功能提供的个人信用报告为简版，与人民银行征信中心官网一致，仅供本人了解自身征信情况，如需详细版征信报告，可通过线下自助渠道打印。</li>
-          </ol>
-        </section>
-      </section>
-    </main>
-  );
-}
-
-function CreditReportHistoryPage({ onBack, onView }) {
   return (
     <main className="app-shell">
       <section className="mobile-page history-page">
-        <PageHeader title="查询记录" onBack={onBack} />
+        <CreditMiniProgramHeader onBack={onBack} onClose={onClose} />
 
         <section className="history-body">
           <div className="history-year-switch">
@@ -145,26 +205,28 @@ function CreditReportHistoryPage({ onBack, onView }) {
             <ChevronDown size={24} strokeWidth={2.5} />
           </div>
 
-          <h2 className="history-group-title">未过期</h2>
+          {activeQueryDate && <h2 className="history-group-title">未过期</h2>}
 
-          <article className="history-card current">
-            <span className="report-icon" aria-hidden="true">
-              <span />
-            </span>
-            <div className="history-card-main">
-              <strong>个人信用报告（张*巍）</strong>
-              <p>生成时间：2026.05.01</p>
-              <div className="history-card-actions">
-                <button type="button">邮箱保存</button>
-                <button type="button" onClick={onView}>
-                  查看报告
-                </button>
+          {activeQueryDate && (
+            <article className="history-card current">
+              <span className="report-icon" aria-hidden="true">
+                <span />
+              </span>
+              <div className="history-card-main">
+                <strong>个人信用报告（张*巍）</strong>
+                <p>生成时间：{activeQueryDate}</p>
+                <div className="history-card-actions">
+                  <button type="button">邮箱保存</button>
+                  <button type="button" onClick={onView}>
+                    查看报告
+                  </button>
+                </div>
               </div>
-            </div>
-            <em>3日后到期</em>
-          </article>
+              <em>7日后到期</em>
+            </article>
+          )}
 
-          <h2 className="history-group-title expired-title">已过期</h2>
+          <h2 className={`history-group-title${activeQueryDate ? " expired-title" : ""}`}>已过期</h2>
 
           {expiredDates.map((date) => (
             <article key={date} className="history-card expired">
@@ -195,109 +257,14 @@ function CreditReportHistoryPage({ onBack, onView }) {
   );
 }
 
-function CreditReportViewer({ onBack }) {
+function CreditReportViewer({ onBack, onClose }) {
   return (
     <main className="app-shell">
       <section className="mobile-page viewer-page">
-        <PageHeader title="信用报告" onBack={onBack} rightText="下载" />
-
-        <section className="viewer-sheet">
-          <div className="viewer-sheet-head">
-            <span className="viewer-stamp">示例</span>
-            <h2>个人信用报告</h2>
-            <p>报告编号：UP202605012028</p>
-            <p>生成时间：2026-05-01 20:28</p>
-          </div>
-
-          <div className="viewer-summary">
-            <div>
-              <strong>0</strong>
-              <span>逾期记录</span>
-            </div>
-            <div>
-              <strong>3</strong>
-              <span>账户概览</span>
-            </div>
-            <div>
-              <strong>2</strong>
-              <span>查询记录</span>
-            </div>
-          </div>
-
-          <section className="viewer-block">
-            <h3>基本信息</h3>
-            <p>
-              <b>姓名</b>
-              <span>张*巍</span>
-            </p>
-            <p>
-              <b>证件号码</b>
-              <span>2103**********0610</span>
-            </p>
-            <p>
-              <b>报告状态</b>
-              <span>已生成</span>
-            </p>
-          </section>
-
-          <section className="viewer-block">
-            <h3>信贷概要</h3>
-            <p>
-              <b>信用卡账户</b>
-              <span>2个，状态正常</span>
-            </p>
-            <p>
-              <b>贷款账户</b>
-              <span>1个，状态正常</span>
-            </p>
-            <p>
-              <b>当前逾期</b>
-              <span>无</span>
-            </p>
-          </section>
-
-          <section className="viewer-block">
-            <h3>查询记录</h3>
-            <p>
-              <b>2026-05-01</b>
-              <span>本人查询</span>
-            </p>
-            <p>
-              <b>2026-04-30</b>
-              <span>贷后管理</span>
-            </p>
-          </section>
-        </section>
+        <CreditMiniProgramHeader onBack={onBack} onClose={onClose} />
+        <RemotePdfViewer src={PDF_URL} />
       </section>
     </main>
-  );
-}
-
-function PageHeader({ title, onBack, rightText }) {
-  return (
-    <header className="page-header">
-      <div className="page-header-left">
-        {onBack ? (
-          <button type="button" className="back-button" aria-label="返回" onClick={onBack}>
-            <ChevronLeft size={34} strokeWidth={2.5} />
-          </button>
-        ) : (
-          <span className="back-placeholder" aria-hidden="true" />
-        )}
-      </div>
-
-      <h1>{title}</h1>
-
-      <div className="page-header-actions">
-        <button type="button" className="action-pill-button" aria-label="更多">
-          <Ellipsis size={28} strokeWidth={2.7} />
-        </button>
-        <span className="action-divider" aria-hidden="true" />
-        <button type="button" className="action-pill-button" aria-label={rightText || "关闭"}>
-          {rightText ? <span className="download-text">{rightText}</span> : <X size={26} strokeWidth={2.7} />}
-        </button>
-      </div>
-    </header>
   );
 }
 

@@ -1,13 +1,14 @@
 import React from "react";
+import { assetPath } from "../assetPath";
 
 const topActions = [
-  { icon: "/current-app-icons/top/pay.png", label: "收付款" },
-  { icon: "/current-app-icons/top/travel.png", label: "出行" },
-  { icon: "/current-app-icons/top/scan.png", label: "扫一扫" },
-  { icon: "/current-app-icons/top/transfer.png", label: "转账" },
+  { icon: assetPath("current-app-icons/top/pay.png"), label: "收付款" },
+  { icon: assetPath("current-app-icons/top/travel.png"), label: "出行" },
+  { icon: assetPath("current-app-icons/top/scan.png"), label: "扫一扫" },
+  { icon: assetPath("current-app-icons/top/transfer.png"), label: "转账" },
 ];
 
-const serviceIconBase = "/assets/service-icons-normalized";
+const serviceIconBase = assetPath("assets/service-icons-normalized");
 const serviceIconVersion = "20260522-3";
 const iconPath = (name) => `${serviceIconBase}/${name}.png?v=${serviceIconVersion}`;
 
@@ -30,31 +31,36 @@ const serviceItems = [
 ];
 
 export default function HomePage({ onNavigate }) {
+  const topPromoImage = assetPath("assets/home/top-promo-custom-20260526-215926.png");
+  const hongbaoImage = assetPath("assets/home/hongbao-20260526.png");
+
   return (
     <section className="tab-page home-page">
       <header className="home-hero">
-        <div className="fake-status">
-          <span>00:42</span>
-          <span>5G 48</span>
-        </div>
+        <img
+          src={topPromoImage}
+          alt=""
+          aria-hidden="true"
+          className="home-hero-bg"
+        />
 
         <div className="home-nav">
           <button type="button" className="home-location">
             <span>鞍山</span>
-            <img src="/current-app-icons/top-small/city-chevron.png" alt="" className="nav-inline-icon city-chevron" />
+            <img src={assetPath("current-app-icons/top-small/city-chevron.png")} alt="" className="nav-inline-icon city-chevron" />
           </button>
 
-          <div className="home-search-bar">
-            <img src="/current-app-icons/top-small/search.png" alt="" className="nav-inline-icon search-icon" />
+          <button type="button" className="home-search-bar" onClick={() => onNavigate("search")}>
+            <img src={assetPath("current-app-icons/top-small/search.png")} alt="" className="nav-inline-icon search-icon" />
             <span>62VIP华住会特权</span>
             <b>搜索</b>
-          </div>
+          </button>
 
           <button type="button" className="hero-round-btn" aria-label="消息">
-            <img src="/current-app-icons/top-small/message.png" alt="" className="hero-round-icon" />
+            <img src={assetPath("current-app-icons/top-small/message.png")} alt="" className="hero-round-icon" />
           </button>
           <button type="button" className="hero-round-btn" aria-label="添加">
-            <img src="/current-app-icons/top-small/plus.png" alt="" className="hero-round-icon" />
+            <img src={assetPath("current-app-icons/top-small/plus.png")} alt="" className="hero-round-icon" />
           </button>
         </div>
 
@@ -66,19 +72,6 @@ export default function HomePage({ onNavigate }) {
             </button>
           ))}
         </div>
-
-        <section className="hero-promo-card">
-          <div className="hero-panda" aria-hidden="true">
-            <span className="panda-head" />
-            <span className="panda-body" />
-            <span className="panda-bowl" />
-          </div>
-          <div className="hero-promo-copy">
-            <p>抽最高620元立减券</p>
-            <strong>新增绑定 一张银行卡</strong>
-          </div>
-          <button type="button">查看</button>
-        </section>
       </header>
 
       <section className="home-services-panel">
@@ -115,24 +108,15 @@ export default function HomePage({ onNavigate }) {
             <em>4月26日</em>
           </p>
         </div>
-        <img src="/current-app-icons/misc/message-dot.png" alt="" className="message-dot-icon" />
-        <img src="/current-app-icons/misc/message-arrow.png" alt="" className="message-arrow-icon" />
-      </section>
-
-      <section className="travel-ad">
-        <div>
-          <h2>五一出境 <b>带上银联卡</b></h2>
-          <p>汇率补贴至高超1000元</p>
-        </div>
-        <div className="travel-panda" aria-hidden="true" />
-        <button type="button">签到</button>
+        <img src={assetPath("current-app-icons/misc/message-dot.png")} alt="" className="message-dot-icon" />
+        <img src={assetPath("current-app-icons/misc/message-arrow.png")} alt="" className="message-arrow-icon" />
       </section>
 
       <section className="home-two-cards">
         <article>
           <h2>专属推荐</h2>
           <div className="mini-recommend">
-            <span />
+            <img src={hongbaoImage} alt="" aria-hidden="true" className="home-bottom-card-icon" />
             <div>
               <strong>玩赚中心</strong>
               <p>点我抽奖 ›</p>
@@ -142,7 +126,7 @@ export default function HomePage({ onNavigate }) {
         <article>
           <h2>本地精彩</h2>
           <div className="local-feature">
-            <img src="/current-app-icons/misc/local-gas.png" alt="" className="local-feature-icon" />
+            <img src={assetPath("current-app-icons/misc/local-gas.png")} alt="" className="local-feature-icon" />
             <div>
               <strong>加油享优惠</strong>
               <p>中石油中石化活动</p>

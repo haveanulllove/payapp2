@@ -3,6 +3,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import "./styles.css";
 
+if (window.location.protocol === "file:") {
+  document.documentElement.classList.add("android-webview");
+}
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />

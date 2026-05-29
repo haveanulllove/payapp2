@@ -1,24 +1,20 @@
 import React from "react";
 import { ChevronLeft, Search } from "lucide-react";
+import { assetPath } from "../assetPath";
 
-const creditIcon = "/assets/mini-programs/credit-report-recent.png";
+const creditIcon = assetPath("assets/mini-programs/credit-report-recent.png");
 
 const followPrograms = [
   { name: "信用报告...", icon: creditIcon, type: "image", iconClassName: "credit-report-icon" },
-  { name: "招商银行...", icon: "/assets/mini-programs/cmb.png", type: "image" },
+  { name: "招商银行...", icon: assetPath("assets/mini-programs/cmb.png"), type: "image" },
   { name: "出行助手", type: "travel" },
-  { name: "银联大连", icon: "/assets/mini-programs/unionpay-dalian.jpg", type: "image" },
+  { name: "银联大连", icon: assetPath("assets/mini-programs/unionpay-dalian.jpg"), type: "image" },
 ];
 
 export default function MiniProgramsPage({ onBack, onOpenCreditReport }) {
   return (
     <main className="app-shell">
       <section className="mobile-page mini-program-page">
-        <div className="mini-status">
-          <span>20:32</span>
-          <span>5G 82</span>
-        </div>
-
         <header className="mini-page-header">
           <button type="button" aria-label="返回" onClick={onBack}>
             <ChevronLeft size={34} strokeWidth={2.8} />

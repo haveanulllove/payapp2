@@ -9,4 +9,5 @@
     <color name="divider">#EEEEEE</color>
     <color name="fortune_header">#1A5276</color>
     <color name="fortune_header_end">#2980B9</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

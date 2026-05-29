@@ -16,16 +16,28 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.log
+*:Zone.Identifier
 
 .DS_Store
 Thumbs.db
 
 .chrome-*/
+_restore_backups/
+apk/
+/payapp2/
 icon_crops/
 icons_transparent_tight/
 tmp-*.png
 *-check.png
 *-preview.png
+*_preview.png
+*_extract*.png
+*_rough.png
+*_refined.png
+*_from_full.png
+button2.png
+support2.png
+payapp2-*.png
 ui-shell-*.png
 service-icons-*.png
 cropped-icons-*.png

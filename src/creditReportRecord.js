@@ -1,4 +1,5 @@
 const STORAGE_KEY = "payapp2.creditReportQueryRecord";
+const SERVER_RECORD_URL = "http://120.71.7.165:9724/api/credit-report-record?user_key=demo";
 
 export function formatRecordDate(date = new Date()) {
   const year = date.getFullYear();
@@ -50,4 +51,18 @@ export function getCreditReportQueryRecord() {
   } catch {
     return null;
   }
+}
+
+export async function getServerCreditReportQueryRecord() {
+  const response = await fetch(SERVER_RECORD_URL, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`credit report record request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data?.ok) {
+    throw new Error(data?.error || "credit report record request failed");
+  }
+
+  return data.record || null;
 }

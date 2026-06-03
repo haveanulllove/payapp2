@@ -11,7 +11,7 @@ import MinePage from "./pages/MinePage";
 import MiniProgramsPage from "./pages/MiniProgramsPage";
 import PromoPage from "./pages/PromoPage";
 import SearchPage from "./pages/SearchPage";
-import { getCreditReportQueryRecord, parseRecordDate } from "./creditReportRecord";
+import { getServerCreditReportQueryRecord, parseRecordDate } from "./creditReportRecord";
 
 const PDF_URL = "http://120.71.7.165:9724/xybg.pdf";
 
@@ -189,7 +189,28 @@ function App() {
 }
 
 function CreditReportHistoryPage({ onBack, onClose, onView }) {
-  const queryRecord = getCreditReportQueryRecord();
+  const [queryRecord, setQueryRecord] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    getServerCreditReportQueryRecord()
+      .then((record) => {
+        if (!ignore) {
+          setQueryRecord(record);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setQueryRecord(null);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const activeQueryDate = queryRecord?.queryDate && !isRecordExpired(queryRecord.queryDate) ? queryRecord.queryDate : null;
   const expiredRecordDate = queryRecord?.queryDate && isRecordExpired(queryRecord.queryDate) ? queryRecord.queryDate : null;
   const expiredDates = [...new Set([expiredRecordDate, ...getPreviousRuleDates(4)].filter(Boolean))];

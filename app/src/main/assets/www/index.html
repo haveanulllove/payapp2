@@ -3,9 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+    (function(){try{
+      if(typeof PayAppCreditReport!=='undefined'&&PayAppCreditReport.getScreenDpWidth){
+        var w=PayAppCreditReport.getScreenDpWidth();
+        if(w>0)document.querySelector('meta[name="viewport"]').setAttribute('content','width='+w+',initial-scale=1.0,viewport-fit=cover');
+      }
+    }catch(e){}})();
+    </script>
     <title>云闪付 UI Shell</title>
-    <script type="module" crossorigin src="./assets/index-CkvJWUD2.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DkXq09go.css">
+    <script type="module" crossorigin src="./assets/index-h7Q3EfS1.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BA8Le3PZ.css">
   </head>
   <body>
     <div id="root"></div>

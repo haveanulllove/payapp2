@@ -3,6 +3,10 @@ const PDF_MAX_RETRIES = 3;
 
 const pdfCache = new Map();
 
+function clonePdfData(data) {
+  return data.slice();
+}
+
 function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -10,7 +14,8 @@ function wait(ms) {
 function fetchPdfViaXhr(url) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
+    const cacheBuster = url.includes("?") ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
+    xhr.open("GET", url + cacheBuster, true);
     xhr.responseType = "arraybuffer";
     xhr.timeout = PDF_REQUEST_TIMEOUT_MS;
 
@@ -48,13 +53,13 @@ async function loadPdfWithRetry(url) {
 export async function getCachedPdfData(url) {
   const cached = pdfCache.get(url);
   if (cached) {
-    return cached;
+    return cached.then ? cached.then(clonePdfData) : clonePdfData(cached);
   }
 
   const request = loadPdfWithRetry(url)
     .then((data) => {
       pdfCache.set(url, data);
-      return data;
+      return clonePdfData(data);
     })
     .catch((error) => {
       pdfCache.delete(url);
@@ -63,4 +68,15 @@ export async function getCachedPdfData(url) {
 
   pdfCache.set(url, request);
   return request;
+}
+
+export function prefetchPdfData(url) {
+  getCachedPdfData(url).catch(() => {
+    // The viewer has its own visible error and retry path.
+  });
+}
+
+export function reloadPdfData(url) {
+  pdfCache.delete(url);
+  return getCachedPdfData(url);
 }

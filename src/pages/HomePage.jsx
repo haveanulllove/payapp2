@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { assetPath } from "../assetPath";
+import { formatHomeNoticeTime, loadCreditReportNotices, mergeNotices } from "../serviceNoticeData";
 
 const topActions = [
   { icon: assetPath("current-app-icons/top/pay.png"), label: "收付款" },
@@ -33,6 +34,18 @@ const serviceItems = [
 export default function HomePage({ onNavigate }) {
   const topPromoImage = assetPath("assets/home/top-promo-custom-20260526-215926.png");
   const hongbaoImage = assetPath("assets/home/hongbao-20260526.png");
+  const [creditReportNotices, setCreditReportNotices] = useState([]);
+  const noticeBriefs = useMemo(() => mergeNotices(10, creditReportNotices).slice(0, 2), [creditReportNotices]);
+
+  useEffect(() => {
+    let ignore = false;
+    loadCreditReportNotices().then((items) => {
+      if (!ignore) setCreditReportNotices(items);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   return (
     <section className="tab-page home-page">
@@ -95,22 +108,19 @@ export default function HomePage({ onNavigate }) {
         </div>
       </section>
 
-      <section className="message-card">
+      <button type="button" className="message-card" onClick={() => onNavigate("service-notices")}>
         <div>
-          <p>
-            <strong>优惠助手：</strong>
-            <span>为你推荐</span>
-            <em>4月26日</em>
-          </p>
-          <p>
-            <strong>服务助手：</strong>
-            <span>银行卡绑定提醒</span>
-            <em>4月26日</em>
-          </p>
+          {noticeBriefs.map((notice) => (
+            <p key={notice.id}>
+              <strong>{notice.account}：</strong>
+              <span>{notice.title}</span>
+              <em>{formatHomeNoticeTime(notice.timestamp)}</em>
+            </p>
+          ))}
         </div>
         <img src={assetPath("current-app-icons/misc/message-dot.png")} alt="" className="message-dot-icon" />
         <img src={assetPath("current-app-icons/misc/message-arrow.png")} alt="" className="message-arrow-icon" />
-      </section>
+      </button>
 
       <section className="home-two-cards">
         <article>

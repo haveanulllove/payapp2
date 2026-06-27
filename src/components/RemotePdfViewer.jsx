@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
-import { getCachedPdfData } from "../pdfCache";
+import { getCachedPdfData, reloadPdfData } from "../pdfCache";
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -29,12 +29,12 @@ function createPageCanvas(viewport) {
 export default function RemotePdfViewer({ src }) {
   const containerRef = useRef(null);
   const pdfDocumentRef = useRef(null);
-  const renderTaskRef = useRef(null);
+  const renderTasksRef = useRef([]);
   const [status, setStatus] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +48,6 @@ export default function RemotePdfViewer({ src }) {
     container.replaceChildren();
     pdfDocumentRef.current = null;
     setTotalPages(0);
-    setPageNumber(1);
     setZoom(1);
 
     const loadPdf = async () => {
@@ -58,7 +57,7 @@ export default function RemotePdfViewer({ src }) {
 
         await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-        const cachedData = await getCachedPdfData(src);
+        const cachedData = await reloadPdfData(src);
 
         if (cancelled) {
           return;
@@ -88,14 +87,14 @@ export default function RemotePdfViewer({ src }) {
 
     return () => {
       cancelled = true;
-      renderTaskRef.current?.cancel?.();
-      renderTaskRef.current = null;
+      renderTasksRef.current.forEach((task) => task.cancel?.());
+      renderTasksRef.current = [];
       loadingTask?.destroy?.();
       pdfDocumentRef.current?.destroy?.();
       pdfDocumentRef.current = null;
       container.replaceChildren();
     };
-  }, [src]);
+  }, [src, reloadKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,37 +105,39 @@ export default function RemotePdfViewer({ src }) {
       return undefined;
     }
 
-    const renderPage = async () => {
+    const renderPages = async () => {
       try {
-        renderTaskRef.current?.cancel?.();
-        renderTaskRef.current = null;
+        renderTasksRef.current.forEach((task) => task.cancel?.());
+        renderTasksRef.current = [];
         container.replaceChildren();
 
-        const page = await pdfDocument.getPage(pageNumber);
+        for (let currentPage = 1; currentPage <= pdfDocument.numPages; currentPage += 1) {
+          const page = await pdfDocument.getPage(currentPage);
 
-        if (cancelled) {
-          return;
+          if (cancelled) {
+            return;
+          }
+
+          const baseViewport = page.getViewport({ scale: 1 });
+          const availableWidth = container.clientWidth || 360;
+          const viewport = page.getViewport({
+            scale: (availableWidth / baseViewport.width) * zoom,
+          });
+          const pageElement = document.createElement("section");
+          pageElement.className = "pdf-page";
+
+          const { canvas, context } = createPageCanvas(viewport);
+          pageElement.appendChild(canvas);
+          container.appendChild(pageElement);
+
+          const renderTask = page.render({
+            canvasContext: context,
+            viewport,
+          });
+
+          renderTasksRef.current.push(renderTask);
+          await renderTask.promise;
         }
-
-        const baseViewport = page.getViewport({ scale: 1 });
-        const availableWidth = container.clientWidth || 360;
-        const viewport = page.getViewport({
-          scale: (availableWidth / baseViewport.width) * zoom,
-        });
-        const pageElement = document.createElement("section");
-        pageElement.className = "pdf-page";
-
-        const { canvas, context } = createPageCanvas(viewport);
-        pageElement.appendChild(canvas);
-        container.appendChild(pageElement);
-
-        const renderTask = page.render({
-          canvasContext: context,
-          viewport,
-        });
-
-        renderTaskRef.current = renderTask;
-        await renderTask.promise;
       } catch (error) {
         const isCancelled = cancelled || error?.name === "RenderingCancelledException";
         if (!isCancelled) {
@@ -146,36 +147,16 @@ export default function RemotePdfViewer({ src }) {
       }
     };
 
-    renderPage();
+    renderPages();
 
     return () => {
       cancelled = true;
-      renderTaskRef.current?.cancel?.();
-      renderTaskRef.current = null;
+      renderTasksRef.current.forEach((task) => task.cancel?.());
+      renderTasksRef.current = [];
     };
-  }, [pageNumber, status, zoom]);
+  }, [status, zoom]);
 
   const hasDocument = totalPages > 0 && status === "ready";
-  const canGoPrevious = hasDocument && pageNumber > 1;
-  const canGoNext = hasDocument && pageNumber < totalPages;
-
-  const goPreviousPage = () => {
-    setPageNumber((current) => Math.max(1, current - 1));
-  };
-
-  const goNextPage = () => {
-    setPageNumber((current) => Math.min(totalPages || current, current + 1));
-  };
-
-  const updatePageNumber = (event) => {
-    const nextPage = Number(event.target.value);
-
-    if (!Number.isFinite(nextPage)) {
-      return;
-    }
-
-    setPageNumber(Math.min(Math.max(1, Math.trunc(nextPage)), totalPages || 1));
-  };
 
   const zoomOut = () => {
     setZoom((current) => Math.max(MIN_ZOOM, Number((current - ZOOM_STEP).toFixed(2))));
@@ -185,26 +166,14 @@ export default function RemotePdfViewer({ src }) {
     setZoom((current) => Math.min(MAX_ZOOM, Number((current + ZOOM_STEP).toFixed(2))));
   };
 
+  const retryLoad = () => {
+    setReloadKey((current) => current + 1);
+  };
+
   return (
     <section className="report-viewer-shell">
       <div className="pdf-toolbar" aria-label="PDF工具栏">
-        <button type="button" className="pdf-toolbar-icon" disabled={!canGoPrevious} onClick={goPreviousPage}>
-          {"<"}
-        </button>
-        <input
-          className="pdf-page-input"
-          type="number"
-          min="1"
-          max={totalPages || 1}
-          value={pageNumber}
-          disabled={!hasDocument}
-          onChange={updatePageNumber}
-          aria-label="页码"
-        />
-        <span className="pdf-page-total">/ {totalPages || "-"}</span>
-        <button type="button" className="pdf-toolbar-icon" disabled={!canGoNext} onClick={goNextPage}>
-          {">"}
-        </button>
+        <span className="pdf-page-total">共 {totalPages || "-"} 页</span>
         <span className="pdf-toolbar-divider" />
         <button type="button" className="pdf-toolbar-icon" disabled={!hasDocument || zoom <= MIN_ZOOM} onClick={zoomOut}>
           -
@@ -215,7 +184,12 @@ export default function RemotePdfViewer({ src }) {
       </div>
       {status !== "ready" && (
         <div className={`pdf-viewer-status${status === "error" ? " is-error" : ""}`}>
-          {status === "loading" ? "PDF加载中..." : errorMessage || "PDF加载失败"}
+          <span>{status === "loading" ? "PDF加载中..." : errorMessage || "PDF加载失败"}</span>
+          {status === "error" && (
+            <button type="button" className="pdf-retry-button" onClick={retryLoad}>
+              重新加载
+            </button>
+          )}
         </div>
       )}
       <div ref={containerRef} className="pdf-viewer-stack" />

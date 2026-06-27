@@ -6,6 +6,7 @@ app/build/
 local.properties
 project_doc_index.sqlite
 docs/superpowers/
+docs/server_info.local.md
 
 .env
 .env.*
@@ -28,6 +29,9 @@ apk/
 icon_crops/
 icons_transparent_tight/
 tmp-*.png
+screen*.png
+dev_*.png
+app-debug.apk
 *-check.png
 *-preview.png
 *_preview.png

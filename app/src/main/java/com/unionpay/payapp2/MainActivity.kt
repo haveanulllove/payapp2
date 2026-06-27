@@ -3,6 +3,7 @@ package com.unionpay.payapp2
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +24,12 @@ import kotlin.math.roundToInt
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var statusBarHeightCssPx: Int = 0
+
+    override fun attachBaseContext(newBase: Context) {
+        val config = Configuration(newBase.resources.configuration)
+        config.fontScale = 1.0f
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private class CreditReportStorage(context: Context) {
+    private inner class CreditReportStorage(context: Context) {
         private val preferences = context.getSharedPreferences("payapp2_credit_report", Context.MODE_PRIVATE)
 
         @JavascriptInterface
@@ -113,6 +120,17 @@ class MainActivity : AppCompatActivity() {
                 return ""
             }
             return "{\"queryDate\":\"$queryDate\"}"
+        }
+
+        @JavascriptInterface
+        fun getStatusBarHeight(): Int {
+            return statusBarHeightCssPx
+        }
+
+        @JavascriptInterface
+        fun getScreenDpWidth(): Int {
+            val dm = resources.displayMetrics
+            return (dm.widthPixels / dm.density).roundToInt()
         }
     }
 }

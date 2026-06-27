@@ -1,5 +1,7 @@
 const STORAGE_KEY = "payapp2.creditReportQueryRecord";
 const SERVER_RECORD_URL = "http://120.71.7.165:9724/api/credit-report-record?user_key=demo";
+const SERVER_RECORDS_URL = "http://120.71.7.165:9724/api/credit-report-records";
+const DEFAULT_REPORT_URL = "http://120.71.7.165:9724/xybg.pdf";
 
 export function formatRecordDate(date = new Date()) {
   const year = date.getFullYear();
@@ -65,4 +67,38 @@ export async function getServerCreditReportQueryRecord() {
   }
 
   return data.record || null;
+}
+
+export async function getServerCreditReportQueryRecords() {
+  const response = await fetch(`${SERVER_RECORDS_URL}?user_key=demo&limit=50`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`credit report records request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data?.ok || !Array.isArray(data.records) || typeof data.serverTime !== "string") {
+    throw new Error(data?.error || "credit report records request failed");
+  }
+
+  return { serverTime: data.serverTime, records: data.records };
+}
+
+export async function createServerCreditReportQueryRecord() {
+  const response = await fetch(SERVER_RECORDS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userKey: "demo", reportUrl: DEFAULT_REPORT_URL }),
+    keepalive: true,
+  });
+
+  if (!response.ok) {
+    throw new Error(`credit report record create failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data?.ok || !data.record || typeof data.record.applyTime !== "string") {
+    throw new Error(data?.error || "credit report record create failed");
+  }
+
+  return data.record;
 }

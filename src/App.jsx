@@ -11,66 +11,42 @@ import MinePage from "./pages/MinePage";
 import MiniProgramsPage from "./pages/MiniProgramsPage";
 import PromoPage from "./pages/PromoPage";
 import SearchPage from "./pages/SearchPage";
-import { getServerCreditReportQueryRecord, parseRecordDate } from "./creditReportRecord";
+import ServiceNoticePage from "./pages/ServiceNoticePage";
+import { getServerCreditReportQueryRecords, parseRecordDate } from "./creditReportRecord";
+import { prefetchPdfData } from "./pdfCache";
 
 const PDF_URL = "http://120.71.7.165:9724/xybg.pdf";
 
-function formatCurrentDate() {
-  return formatDate(new Date());
+function parseRecordTime(record) {
+  const parsed = record.applyTime ? new Date(record.applyTime) : null;
+  const fallback = parseRecordDate(record.queryDate);
+  return parsed && !Number.isNaN(parsed.getTime()) ? parsed : fallback;
 }
 
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
+function startOfLocalDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function createLocalDate(year, monthIndex, day) {
-  return new Date(year, monthIndex, day, 12, 0, 0, 0);
-}
-
-function getMonthRuleDate(year, monthIndex) {
-  const lastDay = createLocalDate(year, monthIndex + 1, 0);
-  const weekDay = lastDay.getDay();
-
-  if (weekDay === 0 || weekDay === 6) {
-    return lastDay;
+function getRecordViewState(record, referenceDate) {
+  const recordTime = parseRecordTime(record);
+  if (!recordTime) {
+    return { state: "expired", daysLeft: 0 };
   }
 
-  return createLocalDate(year, lastDay.getMonth(), lastDay.getDate() + (6 - weekDay));
-}
+  const elapsedMs = referenceDate.getTime() - recordTime.getTime();
+  const tenMinutesMs = 10 * 60 * 1000;
 
-function getPreviousRuleDates(count, referenceDate = new Date()) {
-  const result = [];
-  const today = createLocalDate(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
-  let year = today.getFullYear();
-  let monthIndex = today.getMonth();
-
-  while (result.length < count) {
-    const candidate = getMonthRuleDate(year, monthIndex);
-    if (candidate < today) {
-      result.push(formatDate(candidate));
-    }
-
-    monthIndex -= 1;
-    if (monthIndex < 0) {
-      monthIndex = 11;
-      year -= 1;
-    }
+  if (elapsedMs < tenMinutesMs) {
+    return { state: "pending", daysLeft: 7 };
   }
 
-  return result;
-}
-
-function isRecordExpired(queryDate, referenceDate = new Date()) {
-  const recordDate = parseRecordDate(queryDate);
-  if (!recordDate) {
-    return false;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const elapsedDays = Math.floor((startOfLocalDay(referenceDate).getTime() - startOfLocalDay(recordTime).getTime()) / dayMs);
+  if (elapsedDays <= 7) {
+    return { state: "valid", daysLeft: Math.max(1, 7 - elapsedDays) };
   }
 
-  const today = createLocalDate(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
-  return today.getTime() - recordDate.getTime() >= 7 * 24 * 60 * 60 * 1000;
+  return { state: "expired", daysLeft: 0 };
 }
 
 function App() {
@@ -95,6 +71,20 @@ function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  useEffect(() => {
+    prefetchPdfData(PDF_URL);
+    if (window.PayAppCreditReport && typeof window.PayAppCreditReport.getStatusBarHeight === "function") {
+      try {
+        const height = window.PayAppCreditReport.getStatusBarHeight();
+        if (height > 0) {
+          document.documentElement.style.setProperty('--android-statusbar-height', `${height}px`);
+        }
+      } catch (e) {
+        console.error("Failed to get status bar height", e);
+      }
+    }
+  }, []);
+
   const openPage = (target) => {
     if (historyReadyRef.current) {
       window.history.pushState({ appPage: target }, "");
@@ -112,6 +102,9 @@ function App() {
     }
     if (target === "search") {
       openPage("search");
+    }
+    if (target === "service-notices") {
+      openPage("service-notices");
     }
   };
 
@@ -146,8 +139,8 @@ function App() {
       <CreditReportQueryPage
         onBack={closeCreditReport}
         onClose={closeCreditReport}
+        onHome={goHome}
         onHistory={() => setPage("history")}
-        onView={() => setPage("viewer")}
       />
     );
   }
@@ -174,6 +167,10 @@ function App() {
     return <SearchPage onBack={goBackFromNestedPage} onOpenCreditReport={() => navigate("credit-report")} />;
   }
 
+  if (page === "service-notices") {
+    return <ServiceNoticePage onBack={goHome} />;
+  }
+
   return (
     <main className="app-shell">
       <section className="mobile-page with-tab-bar">
@@ -189,20 +186,24 @@ function App() {
 }
 
 function CreditReportHistoryPage({ onBack, onClose, onView }) {
-  const [queryRecord, setQueryRecord] = useState(null);
+  const [queryRecords, setQueryRecords] = useState([]);
+  const [serverTime, setServerTime] = useState(null);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let ignore = false;
 
-    getServerCreditReportQueryRecord()
-      .then((record) => {
+    getServerCreditReportQueryRecords()
+      .then((result) => {
         if (!ignore) {
-          setQueryRecord(record);
+          setQueryRecords(result.records);
+          setServerTime(result.serverTime);
+          setLoadError("");
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!ignore) {
-          setQueryRecord(null);
+          setLoadError(error.message || "查询记录接口不可用");
         }
       });
 
@@ -211,9 +212,16 @@ function CreditReportHistoryPage({ onBack, onClose, onView }) {
     };
   }, []);
 
-  const activeQueryDate = queryRecord?.queryDate && !isRecordExpired(queryRecord.queryDate) ? queryRecord.queryDate : null;
-  const expiredRecordDate = queryRecord?.queryDate && isRecordExpired(queryRecord.queryDate) ? queryRecord.queryDate : null;
-  const expiredDates = [...new Set([expiredRecordDate, ...getPreviousRuleDates(4)].filter(Boolean))];
+  const parsedServerTime = serverTime ? new Date(serverTime) : null;
+  const referenceDate = parsedServerTime && !Number.isNaN(parsedServerTime.getTime()) ? parsedServerTime : null;
+  const records = referenceDate
+    ? queryRecords
+    .filter((record) => record?.queryDate)
+        .map((record) => ({ ...record, viewState: getRecordViewState(record, referenceDate) }))
+        .sort((a, b) => (parseRecordTime(b)?.getTime() || 0) - (parseRecordTime(a)?.getTime() || 0))
+    : [];
+  const activeRecords = records.filter((record) => record.viewState.state !== "expired");
+  const expiredRecords = records.filter((record) => record.viewState.state === "expired");
 
   return (
     <main className="app-shell">
@@ -226,37 +234,53 @@ function CreditReportHistoryPage({ onBack, onClose, onView }) {
             <ChevronDown size={24} strokeWidth={2.5} />
           </div>
 
-          {activeQueryDate && <h2 className="history-group-title">未过期</h2>}
-
-          {activeQueryDate && (
-            <article className="history-card current">
-              <span className="report-icon" aria-hidden="true">
-                <span />
-              </span>
+          {loadError && (
+            <article className="history-card history-error">
               <div className="history-card-main">
-                <strong>个人信用报告（张*巍）</strong>
-                <p>生成时间：{activeQueryDate}</p>
-                <div className="history-card-actions">
-                  <button type="button">邮箱保存</button>
-                  <button type="button" onClick={onView}>
-                    查看报告
-                  </button>
-                </div>
+                <strong>查询记录加载失败</strong>
+                <p>{loadError}</p>
               </div>
-              <em>7日后到期</em>
             </article>
           )}
 
-          <h2 className={`history-group-title${activeQueryDate ? " expired-title" : ""}`}>已过期</h2>
+          {activeRecords.length > 0 && <h2 className="history-group-title">未过期</h2>}
 
-          {expiredDates.map((date) => (
-            <article key={date} className="history-card expired">
+          {activeRecords.map((record) => (
+            <article
+              key={record.id || record.applyTime || record.queryDate}
+              className={`history-card current ${record.viewState.state}`}
+            >
               <span className="report-icon" aria-hidden="true">
                 <span />
               </span>
               <div className="history-card-main">
                 <strong>个人信用报告（张*巍）</strong>
-                <p>生成时间：{date}</p>
+                <p>生成时间：{record.queryDate}</p>
+                {record.viewState.state === "valid" && (
+                  <div className="history-card-actions">
+                    <button type="button">邮箱保存</button>
+                    <button type="button" onClick={onView}>
+                      查看报告
+                    </button>
+                  </div>
+                )}
+              </div>
+              <em>{record.viewState.state === "pending" ? "查询中" : `${record.viewState.daysLeft}日后到期`}</em>
+            </article>
+          ))}
+
+          {expiredRecords.length > 0 && (
+            <h2 className={`history-group-title${activeRecords.length > 0 ? " expired-title" : ""}`}>已过期</h2>
+          )}
+
+          {expiredRecords.map((record) => (
+            <article key={record.id || record.applyTime || record.queryDate} className="history-card expired">
+              <span className="report-icon" aria-hidden="true">
+                <span />
+              </span>
+              <div className="history-card-main">
+                <strong>个人信用报告（张*巍）</strong>
+                <p>生成时间：{record.queryDate}</p>
               </div>
               <em>已过期</em>
             </article>

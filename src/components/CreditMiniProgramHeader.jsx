@@ -1,14 +1,14 @@
 import React from "react";
 import { ChevronLeft, Ellipsis, X } from "lucide-react";
 
-export default function CreditMiniProgramHeader({ onBack, onClose }) {
+export default function CreditMiniProgramHeader({ title = "信用报告", onBack, onClose }) {
   return (
     <header className="credit-mini-header">
       <button type="button" className="credit-mini-back-button" aria-label="返回" onClick={onBack}>
         <ChevronLeft size={14} strokeWidth={2.6} />
       </button>
 
-      <h1>信用报告</h1>
+      <h1>{title}</h1>
 
       <div className="credit-mini-actions">
         <button type="button" className="credit-mini-action-button" aria-label="更多">

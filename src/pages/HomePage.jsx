@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { assetPath } from "../assetPath";
 import { formatHomeNoticeTime, loadCreditReportNotices, mergeNotices } from "../serviceNoticeData";
 
@@ -7,6 +7,13 @@ const topActions = [
   { icon: assetPath("current-app-icons/top/travel.png"), label: "出行" },
   { icon: assetPath("current-app-icons/top/scan.png"), label: "扫一扫" },
   { icon: assetPath("current-app-icons/top/transfer.png"), label: "转账" },
+];
+
+const searchPrompts = ["银联优惠日", "政府以旧换新补贴"];
+const carouselImages = [
+  "unionpay-youth-card.png",
+  "shenyang-ticket.png",
+  "installment-card.png",
 ];
 
 const serviceIconBase = assetPath("assets/service-icons-normalized");
@@ -34,6 +41,7 @@ const serviceItems = [
 export default function HomePage({ onNavigate }) {
   const topPromoImage = assetPath("assets/home/top-promo-custom-20260526-215926.png");
   const hongbaoImage = assetPath("assets/home/hongbao-20260526.png");
+  const carouselRef = useRef(null);
   const [creditReportNotices, setCreditReportNotices] = useState([]);
   const noticeBriefs = useMemo(() => mergeNotices(10, creditReportNotices).slice(0, 2), [creditReportNotices]);
 
@@ -45,6 +53,17 @@ export default function HomePage({ onNavigate }) {
     return () => {
       ignore = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return undefined;
+    const timer = window.setInterval(() => {
+      const step = carousel.querySelector("img")?.getBoundingClientRect().width || carousel.clientWidth;
+      const next = carousel.scrollLeft + step >= carousel.scrollWidth - step / 2 ? 0 : carousel.scrollLeft + step;
+      carousel.scrollTo({ left: next, behavior: "smooth" });
+    }, 7000);
+    return () => window.clearInterval(timer);
   }, []);
 
   return (
@@ -65,7 +84,13 @@ export default function HomePage({ onNavigate }) {
 
           <button type="button" className="home-search-bar" onClick={() => onNavigate("search")}>
             <img src={assetPath("current-app-icons/top-small/search.png")} alt="" className="nav-inline-icon search-icon" />
-            <span>62VIP华住会特权</span>
+            <span className="home-search-rotator" aria-label={searchPrompts.join("、")}>
+              <span className="home-search-rotator-track">
+                {searchPrompts.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </span>
+            </span>
             <b>搜索</b>
           </button>
 
@@ -121,6 +146,12 @@ export default function HomePage({ onNavigate }) {
         <img src={assetPath("current-app-icons/misc/message-dot.png")} alt="" className="message-dot-icon" />
         <img src={assetPath("current-app-icons/misc/message-arrow.png")} alt="" className="message-arrow-icon" />
       </button>
+
+      <section className="home-carousel" aria-label="活动轮播" ref={carouselRef}>
+        {carouselImages.map((image) => (
+          <img key={image} src={assetPath(`assets/home/carousel/${image}`)} alt="" />
+        ))}
+      </section>
 
       <section className="home-two-cards">
         <article>

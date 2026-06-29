@@ -17,7 +17,7 @@ export default function MiniProgramsPage({ onBack, onOpenCreditReport }) {
       <section className="mobile-page mini-program-page">
         <header className="mini-page-header">
           <button type="button" aria-label="返回" onClick={onBack}>
-            <ChevronLeft size={34} strokeWidth={2.8} />
+            <ChevronLeft strokeWidth={2} />
           </button>
           <h1>我的小程序</h1>
           <button type="button" className="discover-btn">发现</button>

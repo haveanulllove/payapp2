@@ -1,4 +1,4 @@
-import { getServerCreditReportQueryRecords } from "./creditReportRecord";
+import { getServerCreditReportQueryRecords } from "./creditReportRecord.js";
 
 export const noticeTemplates = [
   {
@@ -62,17 +62,20 @@ function formatNoticeTime(date, hour, today) {
   return formatNoticeDateTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0), today);
 }
 
-export function buildNoticeItems(dayCount) {
-  const today = new Date();
+export function buildNoticeItems(dayCount, today = new Date()) {
   const items = [];
+  const nowTime = today.getTime();
 
   for (let dayOffset = 0; dayOffset < dayCount; dayOffset += 1) {
     const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dayOffset);
     [16, 8].forEach((hour, timeIndex) => {
+      const timestamp = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0).getTime();
+      if (timestamp > nowTime) return;
+
       const template = noticeTemplates[(dayOffset + timeIndex) % noticeTemplates.length];
       items.push({
         id: `${date.toISOString()}-${hour}`,
-        timestamp: new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0).getTime(),
+        timestamp,
         time: formatNoticeTime(date, hour, today),
         ...template,
       });
@@ -92,7 +95,7 @@ export function buildCreditReportNotice(record, now = new Date()) {
     type: "credit-report",
     account: "信用报告",
     timestamp: readyTime.getTime(),
-    time: formatNoticeDateTime(readyTime),
+    time: formatNoticeDateTime(readyTime, now),
     title: "信用报告生成提醒",
     generatedDate: formatDateOnly(readyTime),
     expireDate: formatDateOnly(new Date(readyTime.getFullYear(), readyTime.getMonth(), readyTime.getDate() + 7)),
@@ -100,9 +103,10 @@ export function buildCreditReportNotice(record, now = new Date()) {
 }
 
 export async function loadCreditReportNotices() {
-  const now = new Date();
   try {
-    const { records } = await getServerCreditReportQueryRecords();
+    const { serverTime, records } = await getServerCreditReportQueryRecords();
+    const serverNow = new Date(serverTime);
+    const now = Number.isNaN(serverNow.getTime()) ? new Date() : serverNow;
     return records.map((record) => buildCreditReportNotice(record, now)).filter(Boolean);
   } catch {
     return [];

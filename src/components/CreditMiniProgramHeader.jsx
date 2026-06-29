@@ -1,13 +1,10 @@
 import React from "react";
-import { ChevronLeft, Ellipsis, X } from "lucide-react";
+import { Ellipsis } from "lucide-react";
+import { assetPath } from "../assetPath";
 
-export default function CreditMiniProgramHeader({ title = "信用报告", onBack, onClose }) {
+export default function CreditMiniProgramHeader({ title = "信用报告", onClose }) {
   return (
     <header className="credit-mini-header">
-      <button type="button" className="credit-mini-back-button" aria-label="返回" onClick={onBack}>
-        <ChevronLeft size={14} strokeWidth={2.6} />
-      </button>
-
       <h1>{title}</h1>
 
       <div className="credit-mini-actions">
@@ -16,9 +13,7 @@ export default function CreditMiniProgramHeader({ title = "信用报告", onBack
         </button>
         <span className="credit-mini-action-divider" aria-hidden="true" />
         <button type="button" className="credit-mini-action-button" aria-label="关闭小程序" onClick={onClose}>
-          <span className="credit-mini-close-circle">
-            <X size={12} strokeWidth={3.2} />
-          </span>
+          <img src={assetPath("assets/credit-report/close-original.png")} alt="" className="credit-mini-close-icon" />
         </button>
       </div>
     </header>

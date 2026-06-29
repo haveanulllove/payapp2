@@ -1,8 +1,10 @@
 package com.unionpay.payapp2
 
 import android.annotation.SuppressLint
+import android.Manifest
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
@@ -11,11 +13,15 @@ import android.view.View
 import android.view.Window
 import android.view.WindowInsets
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebChromeClient
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -24,6 +30,16 @@ import kotlin.math.roundToInt
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var statusBarHeightCssPx: Int = 0
+    private var pendingPermissionRequest: PermissionRequest? = null
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val request = pendingPermissionRequest ?: return@registerForActivityResult
+        pendingPermissionRequest = null
+        if (granted) {
+            request.grant(request.resources)
+        } else {
+            request.deny()
+        }
+    }
 
     override fun attachBaseContext(newBase: Context) {
         val config = Configuration(newBase.resources.configuration)
@@ -44,6 +60,23 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
 
         webView = WebView(this).apply {
+            webChromeClient = object : WebChromeClient() {
+                override fun onPermissionRequest(request: PermissionRequest) {
+                    if (!request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                        request.deny()
+                        return
+                    }
+
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+                        return
+                    }
+
+                    pendingPermissionRequest?.deny()
+                    pendingPermissionRequest = request
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+            }
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)

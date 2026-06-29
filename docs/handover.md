@@ -19,6 +19,7 @@
 - 当前手机“查看协议”页截图和可见文字基线已保存在 `docs/captures/credit-current-20260624-153541.png` 与 `docs/captures/credit-current-20260624-153541-text.md`。
 - 查询记录页正在按用户最新原版截图重做整体卡片比例：未过期、查询中、已过期共用同一图标、标题、生成时间、右侧状态字号和图文间距；可查看卡片只额外保留右下角按钮区。
 - 查询记录页底部红色说明必须固定在屏幕底部；列表内容单独滚动，不能让 footer 跟随列表滑走。
+- 服务通知数据层已有 `npm test` 最小自检；信用报告生成提醒用服务端 `serverTime` 做“今天/昨天”和未来记录过滤。
 - 最新 debug APK 已上传到 GitHub 公共仓库 `https://github.com/haveanulllove/newapp2`，文件名为 `appdebug.apk`；下载地址：`https://github.com/haveanulllove/newapp2/raw/main/appdebug.apk`。
 
 ## 当前阻塞点

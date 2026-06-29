@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal, Search, UserRoundCheck } from "lucide-react";
 import { loadCreditReportNotices, mergeNotices } from "../serviceNoticeData";
 
-export default function ServiceNoticePage({ onBack }) {
+export default function ServiceNoticePage({ onBack, onOpenCreditReport }) {
   const [dayCount, setDayCount] = useState(10);
   const [creditReportNotices, setCreditReportNotices] = useState([]);
   const notices = useMemo(() => mergeNotices(dayCount, creditReportNotices), [creditReportNotices, dayCount]);
@@ -51,7 +51,7 @@ export default function ServiceNoticePage({ onBack }) {
             <article key={notice.id} className="service-notice-item">
               <time>{notice.time}</time>
               {notice.type === "credit-report" ? (
-                <section className="service-notice-card credit-report-notice-card">
+                <section className="service-notice-card credit-report-notice-card" onClick={onOpenCreditReport}>
                   <header className="credit-report-notice-head">
                     <button type="button" aria-label="更多" className="notice-card-more">
                       <MoreHorizontal size={18} strokeWidth={2.4} />

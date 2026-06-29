@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { assetPath } from "../assetPath";
 import CreditMiniProgramHeader from "../components/CreditMiniProgramHeader";
 import {
@@ -10,11 +10,11 @@ import {
 const assetVersion = "20260524-6";
 
 const noticeItems = [
-  "除了信息提供机构，任何其他机构无权处理您个人信用报告上的不良记录，请警惕以处理不良信用记录为诱饵的诈骗活动。",
-  "个人信用报告涉及您的个人隐私，为确保隐私安全，该报告仅限本人查询，查询成功后请妥善保管您的报告。",
-  "过于频繁查询信用报告可能会影响您的信用卡及贷款申请额度和进度，具体以放款机构规则为准。",
-  "查询成功后您的信用报告仅保留7天，7天后自动删除，请您收到报告生成短信后及时查看报告。",
-  "本功能提供的个人信用报告为简版，与人民银行征信中心官网一致，仅供本人了解自身征信情况，如需详细版征信报告，可通过线下自助渠道打印。",
+  ["除了信息提供机构，任何其他机构无权处理您个人信用报告上的不良记录，请", ["警惕"], "以", ["处理不良信用记录"], "为诱饵的", ["诈骗活动"], "。"],
+  ["个人信用报告涉及您的", ["个人隐私"], "，为确保隐私安全，该报告仅限本人查询，查询成功后请妥善保管您的报告。"],
+  ["过于", ["频繁查询"], "信用报告可能会影响您的", ["信用卡及贷款申请额度"], "和进度，具体以放款机构规则为准。"],
+  ["查询成功后您的信用报告仅", ["保留7天"], "，7天后自动删除，请您收到报告生成短信后及时查看报告。"],
+  ["本功能提供的个人信用报告为", ["简版"], "，与人民银行征信中心官网一致，仅供本人了解自身征信情况，如需详细版征信报告，可通过线下自助渠道打印。"],
 ];
 
 const agreementItems = [
@@ -72,6 +72,7 @@ export default function CreditReportQueryPage({ onBack, onClose, onHome, onHisto
   const [showAgreementPage, setShowAgreementPage] = useState(false);
   const [showFaceAuthDialog, setShowFaceAuthDialog] = useState(false);
   const [showFaceRecognitionPage, setShowFaceRecognitionPage] = useState(false);
+  const [showFaceCameraPage, setShowFaceCameraPage] = useState(false);
   const [showAuthorizationPage, setShowAuthorizationPage] = useState(false);
   const isVerificationReady = /^\d{6}$/.test(verificationCode);
 
@@ -105,7 +106,7 @@ export default function CreditReportQueryPage({ onBack, onClose, onHome, onHisto
       return;
     }
 
-    setCountdown(5);
+    setCountdown(60);
   };
 
   const handleVerificationCodeChange = (event) => {
@@ -150,10 +151,26 @@ export default function CreditReportQueryPage({ onBack, onClose, onHome, onHisto
 
   const handleFaceRecognitionNext = () => {
     setShowFaceRecognitionPage(false);
-    handleConfirmAgreement();
+    setShowFaceCameraPage(true);
   };
 
   if (showAgreementPage) {
+    if (showFaceCameraPage) {
+      return (
+        <FaceCameraPage
+          isSubmitting={isSubmitting}
+          onBack={() => {
+            setShowFaceCameraPage(false);
+            setShowFaceRecognitionPage(true);
+          }}
+          onNext={() => {
+            setShowFaceCameraPage(false);
+            handleConfirmAgreement();
+          }}
+        />
+      );
+    }
+
     if (showFaceRecognitionPage) {
       return (
         <main className="app-shell">
@@ -403,7 +420,7 @@ export default function CreditReportQueryPage({ onBack, onClose, onHome, onHisto
             )}
             alt="免费申请查询"
             className="primary-query-image"
-            style={{ width: "35.8cqw", transform: "translateY(0.58cqw)" }}
+            style={{ width: "37cqw", transform: "translateY(0.58cqw)" }}
           />
         </button>
 
@@ -420,7 +437,9 @@ export default function CreditReportQueryPage({ onBack, onClose, onHome, onHisto
           </div>
           <ol className="notice-list">
             {noticeItems.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item.flat().join("")}>
+                {item.map((part) => (Array.isArray(part) ? <strong key={part[0]}>{part[0]}</strong> : part))}
+              </li>
             ))}
           </ol>
         </section>
@@ -448,6 +467,68 @@ export default function CreditReportQueryPage({ onBack, onClose, onHome, onHisto
             </section>
           </div>
         )}
+      </section>
+    </main>
+  );
+}
+
+function FaceCameraPage({ isSubmitting, onBack, onNext }) {
+  const videoRef = useRef(null);
+  const [cameraError, setCameraError] = useState("");
+
+  useEffect(() => {
+    let stream;
+    let cancelled = false;
+
+    async function openCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error("Failed to open front camera", error);
+        setCameraError("请允许摄像头权限后重试");
+      }
+    }
+
+    if (navigator.mediaDevices?.getUserMedia) {
+      openCamera();
+    } else {
+      setCameraError("当前环境不支持摄像头");
+    }
+
+    return () => {
+      cancelled = true;
+      stream?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  return (
+    <main className="app-shell">
+      <section className="mobile-page face-camera-page">
+        <img
+          src={assetPath("assets/credit-report/face-recognition-page-clean.png")}
+          alt=""
+          className="face-recognition-image"
+        />
+        <video ref={videoRef} className="face-camera-video" autoPlay muted playsInline />
+        {cameraError && <div className="face-camera-error">{cameraError}</div>}
+        <button type="button" className="face-recognition-hit face-recognition-close" aria-label="返回" onClick={onBack} />
+        <button
+          type="button"
+          className="face-recognition-hit face-camera-next"
+          aria-label="下一步"
+          onClick={onNext}
+          disabled={isSubmitting}
+        />
       </section>
     </main>
   );

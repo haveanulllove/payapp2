@@ -18,7 +18,7 @@ import { prefetchPdfData } from "./pdfCache";
 const PDF_URL = "http://120.71.7.165:9724/xybg.pdf";
 
 function parseRecordTime(record) {
-  const parsed = record.applyTime ? new Date(record.applyTime) : null;
+  const parsed = record.readyTime ? new Date(record.readyTime) : null;
   const fallback = parseRecordDate(record.queryDate);
   return parsed && !Number.isNaN(parsed.getTime()) ? parsed : fallback;
 }
@@ -33,10 +33,7 @@ function getRecordViewState(record, referenceDate) {
     return { state: "expired", daysLeft: 0 };
   }
 
-  const elapsedMs = referenceDate.getTime() - recordTime.getTime();
-  const tenMinutesMs = 10 * 60 * 1000;
-
-  if (elapsedMs < tenMinutesMs) {
+  if (referenceDate.getTime() < recordTime.getTime()) {
     return { state: "pending", daysLeft: 7 };
   }
 
@@ -47,6 +44,10 @@ function getRecordViewState(record, referenceDate) {
   }
 
   return { state: "expired", daysLeft: 0 };
+}
+
+function getRecordYear(record) {
+  return String(record?.queryDate || record?.applyTime || "").slice(0, 4);
 }
 
 function App() {
@@ -164,11 +165,11 @@ function App() {
   }
 
   if (page === "search") {
-    return <SearchPage onBack={goBackFromNestedPage} onOpenCreditReport={() => navigate("credit-report")} />;
+    return <SearchPage onBack={goHome} onOpenCreditReport={() => navigate("credit-report")} />;
   }
 
   if (page === "service-notices") {
-    return <ServiceNoticePage onBack={goHome} />;
+    return <ServiceNoticePage onBack={goHome} onOpenCreditReport={() => navigate("credit-report")} />;
   }
 
   return (
@@ -189,6 +190,7 @@ function CreditReportHistoryPage({ onBack, onClose, onView }) {
   const [queryRecords, setQueryRecords] = useState([]);
   const [serverTime, setServerTime] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
 
   useEffect(() => {
     let ignore = false;
@@ -198,6 +200,7 @@ function CreditReportHistoryPage({ onBack, onClose, onView }) {
         if (!ignore) {
           setQueryRecords(result.records);
           setServerTime(result.serverTime);
+          setSelectedYear(new Date(result.serverTime).getFullYear().toString());
           setLoadError("");
         }
       })
@@ -214,14 +217,18 @@ function CreditReportHistoryPage({ onBack, onClose, onView }) {
 
   const parsedServerTime = serverTime ? new Date(serverTime) : null;
   const referenceDate = parsedServerTime && !Number.isNaN(parsedServerTime.getTime()) ? parsedServerTime : null;
+  const currentYear = referenceDate ? referenceDate.getFullYear().toString() : new Date().getFullYear().toString();
+  const yearOptions = Array.from(new Set([currentYear, ...queryRecords.map(getRecordYear).filter(Boolean)])).sort((a, b) => Number(b) - Number(a));
+  const activeYear = selectedYear || currentYear;
   const records = referenceDate
     ? queryRecords
     .filter((record) => record?.queryDate)
+        .filter((record) => getRecordYear(record) === activeYear)
         .map((record) => ({ ...record, viewState: getRecordViewState(record, referenceDate) }))
         .sort((a, b) => (parseRecordTime(b)?.getTime() || 0) - (parseRecordTime(a)?.getTime() || 0))
     : [];
   const activeRecords = records.filter((record) => record.viewState.state !== "expired");
-  const expiredRecords = records.filter((record) => record.viewState.state === "expired");
+  const expiredRecords = records.filter((record) => record.viewState.state === "expired").slice(0, 6);
 
   return (
     <main className="app-shell">
@@ -229,10 +236,14 @@ function CreditReportHistoryPage({ onBack, onClose, onView }) {
         <CreditMiniProgramHeader onBack={onBack} onClose={onClose} />
 
         <section className="history-body">
-          <div className="history-year-switch">
-            <span>2026</span>
+          <label className="history-year-switch">
+            <select value={activeYear} onChange={(event) => setSelectedYear(event.target.value)}>
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
             <ChevronDown size={24} strokeWidth={2.5} />
-          </div>
+          </label>
 
           {loadError && (
             <article className="history-card history-error">
